@@ -6,6 +6,11 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 
+def get_var(ds, *names):
+    for name in names:
+        if name in ds.variables:
+            return ds[name]
+    raise KeyError(f"None of these variables found: {names}")
 
 @dataclass
 class CeilometerData:
@@ -22,23 +27,26 @@ class CeilometerData:
 
     @classmethod
     def from_cloudnet_file(cls, ncfile: Path) -> "CeilometerData":
-        with xr.open_dataset(ncfile.as_posix()) as ds:
+        with xr.open_dataset(ncfile.as_posix()) as ds_org:
+            ds = ds_org.resample(time="2min").mean(skipna=True)
+            cloud_base = get_var(ds, "cloud_base_height_agl", "cloud_base_height")
+            cloud_top = get_var(ds, "cloud_top_height_agl", "cloud_top_height")
             return cls(
-                ds.latitude.data,
-                ds.longitude.data,
+                ds.latitude.data[0],
+                ds.longitude.data[0],
                 ds.attrs["location"],
-                ds.altitude.data,
+                ds.altitude.data[0],
                 ds.time.data,
-                ds.cloud_base_height_agl.data.reshape(-1, 1),
-                ds.cloud_top_height_agl.data.reshape(-1, 1),
-                np.ones_like(ds.cloud_base_height_agl.data) * -999.9,
-                np.ones_like(ds.cloud_base_height_agl.data) * -999.9,
-                np.ones_like(ds.cloud_base_height_agl.data) * -999.9,
+                cloud_base.data.reshape(-1, 1),
+                cloud_top.data.reshape(-1, 1),
+                np.ones_like(cloud_base.data) * -999.9,
+                np.ones_like(cloud_base.data) * -999.9,
+                np.ones_like(cloud_base.data) * -999.9,
             )
 
     @classmethod
     def from_mora_file(
-        cls, cbfile: Path, cloudamountfile: Optional[Path], precipfile: Optional[Path]
+        cls, cbfile: Path, cloudamountfile: Optional[Path]=None, precipfile: Optional[Path]=None
     ) -> "CeilometerData":
         df_subset, station_meta_data = get_cloudbase_data(cbfile)
         if cloudamountfile is None:
@@ -106,7 +114,8 @@ def get_cloudbase_data(cbfile: Path) -> tuple[pd.DataFrame, pd.DataFrame, np.nda
     df_subset.loc[:, "multilayer"] = multilayer
     return df_subset, station_meta_data
 
-def consolidate_info_on_multiple_layers(df):
+
+def consolidate_info_on_multiple_layers(df)->pd.DataFrame:
     subsets = {}
     for level in range(0, 5):
         subset = df[df["Level from"] == float(level)].copy()
@@ -120,12 +129,11 @@ def consolidate_info_on_multiple_layers(df):
         merged = merged.merge(subsets[level], on="time", how="outer")
 
     merged.sort_values("time")
-    merged["height_level_1"] = merged["height_level_0"].combine_first(merged["height_level_1"])       
-
+    merged["height_level_1"] = merged["height_level_0"].combine_first(merged["height_level_1"])
     return merged
 
 
-def get_multilayer_flag(df):
+def get_multilayer_flag(df)->pd.DataFrame:
     df_subset = df[df["Level from"] == 1.0]  # lowest level
     time1 = get_mora_time(df_subset)
     df_subset.loc[:, "time"] = time1
