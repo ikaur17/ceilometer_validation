@@ -1,5 +1,5 @@
 CMPATH = "/home/sm_indka/data/Celiometer/"
-CBHPATH = "/nobackup/smhid20/users/sm_indka/data/pps/export/"
+CBHPATH = "/nobackup/smhid20/users/sm_indka/data/pps_dev/export/"
 stations = ["norunda"]
 DATES = [str(d) for d in range(20250301, 20250331)]
 

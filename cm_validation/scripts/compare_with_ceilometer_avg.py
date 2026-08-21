@@ -177,7 +177,7 @@ def get_cth_data(file: str, indices: tuple[int, int]) -> np.ndarray:
 def get_satzenith_angle(file: str, indices: tuple[int, int]) -> np.ndarray:
     imagerfile = glob.glob(
         os.path.join(
-            "/nobackup/smhid20/users/sm_indka/data/pps/import/IMAGER_data/",
+            "/nobackup/smhid20/users/sm_indka/data/pps_dev/import/IMAGER_data/",
             "*" + os.path.basename(file)[15:],
         )
     )[0]
@@ -189,7 +189,7 @@ def get_satzenith_angle(file: str, indices: tuple[int, int]) -> np.ndarray:
 def get_sunzenith_angle(file: str, indices: tuple[int, int]) -> np.ndarray:
     imagerfile = glob.glob(
         os.path.join(
-            "/nobackup/smhid20/users/sm_indka/data/pps/import/IMAGER_data/",
+            "/nobackup/smhid20/users/sm_indka/data/pps_dev/import/IMAGER_data/",
             "*" + os.path.basename(file)[15:],
         )
     )[0]
@@ -203,6 +203,7 @@ def get_sat_name(file: str) -> str:
 
 
 def extract_matched_data_from_file(file: str, cm: CeilometerData) -> dict:
+    print(f"doing file {file}")
     with xr.open_dataset(file) as ds:
         if not check_if_in_domain(cm.latitude, cm.longitude, ds.lat.data, ds.lon.data):
             return None
@@ -347,9 +348,11 @@ if __name__ == "__main__":
     # ]
     # MORA_STATIONS = []
     CMPATH = "/home/sm_indka/data/Celiometer/"
-    CBHPATH = "/nobackup/smhid20/users/sm_indka/data/pps/export/"
+    CBHPATH = "/nobackup/smhid20/users/sm_indka/data/pps_dev/export/"
     # CBHPATH = "/nobackup/smhid20/proj/foua/data/NWCSAF/CBH_FMI_MAR25/FMI_CBH_PPS"
-    DATES = np.arange(20250301, 20250318, 1).astype("str")
+    DATES = np.arange(20250303, 20250304, 1).astype("str")
+    
+    print(DATES)
 
     for station in CLOUDNET_STATIONS:
         print(f"Doing {station}")
